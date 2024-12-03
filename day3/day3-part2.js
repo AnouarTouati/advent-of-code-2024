@@ -15,9 +15,8 @@ async function puzzle() {
     state = "";
     tuple = ["", ""];
   };
-
-  for (let i = 0; i < input.length; i++) {
-    switch (input[i]) {
+  const lookoutForDoInstruction = (character) => {
+    switch (character) {
       case "d":
         doState === "" ? (doState = "d") : (doState = "");
         break;
@@ -39,8 +38,9 @@ async function puzzle() {
       dontState = "";
       doState = "";
     }
-
-    switch (input[i]) {
+  };
+  const lookoutForDontInstruction = (character) => {
+    switch (character) {
       case "d":
         dontState === "" ? (dontState = "d") : (dontState = "");
         break;
@@ -71,6 +71,11 @@ async function puzzle() {
       dontState = "";
       doState = "";
     }
+  };
+  for (let i = 0; i < input.length; i++) {
+    lookoutForDoInstruction(input[i]);
+    lookoutForDontInstruction(input[i]);
+
     if (active) {
       switch (input[i]) {
         case "m":
@@ -125,7 +130,9 @@ async function puzzle() {
     sum += tuple[0] * tuple[1];
   });
 
-  console.log("sum of all multiplications is : " + sum);
+  console.log(
+    "sum of all multiplications with do/dont instruction handled is : " + sum
+  );
 }
 
 puzzle();
