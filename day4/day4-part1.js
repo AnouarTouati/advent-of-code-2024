@@ -1,6 +1,6 @@
 const fs = require("node:fs/promises");
 
-async function puzzle1() {
+async function puzzle() {
   let input = await fs.readFile("input.txt", { encoding: "utf8" });
   const rows = input.split("\n");
 
@@ -81,4 +81,4 @@ const numberOfOccurrences = (str) => {
   );
 };
 
-puzzle1();
+puzzle();
