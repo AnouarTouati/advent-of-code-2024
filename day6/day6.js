@@ -8,99 +8,82 @@ async function puzzle() {
     rows.push(str.split(""));
   });
 
-  let visitedCoordinates = [];
+  let currentPositionX = -1;
+  let currentPositionY = -1;
   //find starting position
   rows.forEach((row, index) => {
     if (row.indexOf("^") !== -1) {
-      visitedCoordinates.push([index, row.indexOf("^")]);
+      currentPositionX = index;
+      currentPositionY = row.indexOf("^");
     }
   });
 
   let isInBound = true;
-  let index = 0;
+
   while (isInBound) {
-    const guard =
-      rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]];
-    let nextPosition = [-1, -1];
-    // console.log(guard);
+    const guard = rows[currentPositionX][currentPositionY];
+
+    let nextPositionX = currentPositionX;
+    let nextPositionY = currentPositionY;
+    //get coordinate of next position
     switch (guard) {
       case "^":
-        nextPosition = [
-          visitedCoordinates[index][0] - 1,
-          visitedCoordinates[index][1],
-        ];
+        nextPositionX = currentPositionX - 1;
         break;
       case ">":
-        nextPosition = [
-          visitedCoordinates[index][0],
-          visitedCoordinates[index][1] + 1,
-        ];
+        nextPositionY = currentPositionY + 1;
         break;
       case "v":
-        nextPosition = [
-          visitedCoordinates[index][0] + 1,
-          visitedCoordinates[index][1],
-        ];
+        nextPositionX = currentPositionX + 1;
         break;
       case "<":
-        nextPosition = [
-          visitedCoordinates[index][0],
-          visitedCoordinates[index][1] - 1,
-        ];
+        nextPositionY = currentPositionY - 1;
         break;
       default:
-        // console.log("something went wrong");
+        console.log("something went wrong");
         break;
     }
-
+    //check if next position is out of bounds. meaning guard left, aka puzzle end
     if (
-      nextPosition[0] < 0 ||
-      nextPosition[0] > rows.length - 1 ||
-      nextPosition[1] < 0 ||
-      nextPosition[1] > rows[0].length - 1
+      nextPositionX < 0 ||
+      nextPositionX > rows.length - 1 ||
+      nextPositionY < 0 ||
+      nextPositionY > rows[0].length - 1
     ) {
+      //game ends
       isInBound = false;
     } else {
-      if (rows[nextPosition[0]][nextPosition[1]] === "#") {
-        // console.log("changing direction");
+      //we are still in the game
+      //check if we hit an obstacle
+      if (rows[nextPositionX][nextPositionY] === "#") {
+        // changing direction
         switch (guard) {
           case "^":
-            rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]] =
-              ">";
+            rows[currentPositionX][currentPositionY] = ">";
             break;
           case ">":
-            rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]] =
-              "v";
+            rows[currentPositionX][currentPositionY] = "v";
             break;
           case "v":
-            rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]] =
-              "<";
+            rows[currentPositionX][currentPositionY] = "<";
             break;
           case "<":
-            rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]] =
-              "^";
+            rows[currentPositionX][currentPositionY] = "^";
             break;
           default:
-            console.log("something went wrong2");
+            console.log("something went wrong 2");
             break;
         }
       } else {
-        // console.log("not changing direction");
+        //move the guard to the next position
+        rows[currentPositionX][currentPositionY] = "X";
+        rows[nextPositionX][nextPositionY] = guard;
 
-        rows[visitedCoordinates[index][0]][visitedCoordinates[index][1]] = "X";
-
-        rows[nextPosition[0]][nextPosition[1]] = guard;
-
-        visitedCoordinates.push(nextPosition);
-        index++;
+        currentPositionX = nextPositionX;
+        currentPositionY = nextPositionY;
       }
     }
   }
-
-  // rows.forEach((row) => {
-  //   console.log(JSON.stringify(row));
-  //   console.log("\n");
-  // });
 
   let visited = 0;
 
