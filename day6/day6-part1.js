@@ -1,5 +1,95 @@
 const fs = require("node:fs/promises");
 
+const getStartingPosition = (rows) => {
+  let position = [];
+  rows.forEach((row, index) => {
+    if (row.indexOf("^") !== -1) {
+      position[0] = index;
+      position[1] = row.indexOf("^");
+    }
+  });
+  return position;
+};
+
+const getNextPosition = (
+  currentPositionX,
+  currentPositionY,
+  guardDirection
+) => {
+  let nextPositionX = currentPositionX;
+  let nextPositionY = currentPositionY;
+  switch (guardDirection) {
+    case "^":
+      nextPositionX = currentPositionX - 1;
+      break;
+    case ">":
+      nextPositionY = currentPositionY + 1;
+      break;
+    case "v":
+      nextPositionX = currentPositionX + 1;
+      break;
+    case "<":
+      nextPositionY = currentPositionY - 1;
+      break;
+    default:
+      console.log("something went wrong");
+      break;
+  }
+  return [nextPositionX, nextPositionY];
+};
+
+const checkIfGuardLeft = (
+  nextPositionX,
+  nextPositionY,
+  numberOfRows,
+  numberOfColumns
+) => {
+  return (
+    nextPositionX < 0 ||
+    nextPositionX > numberOfRows - 1 ||
+    nextPositionY < 0 ||
+    nextPositionY > numberOfColumns - 1
+  );
+};
+
+const changeDirection = (
+  rows,
+  guardDirection,
+  currentPositionX,
+  currentPositionY
+) => {
+  switch (guardDirection) {
+    case "^":
+      rows[currentPositionX][currentPositionY] = ">";
+      break;
+    case ">":
+      rows[currentPositionX][currentPositionY] = "v";
+      break;
+    case "v":
+      rows[currentPositionX][currentPositionY] = "<";
+      break;
+    case "<":
+      rows[currentPositionX][currentPositionY] = "^";
+      break;
+    default:
+      console.log("something went wrong 2");
+      break;
+  }
+};
+
+const moveGuarToNextPosition = (
+  rows,
+  guardDirection,
+  currentPositionX,
+  currentPositionY,
+  nextPositionX,
+  nextPositionY
+) => {
+  rows[currentPositionX][currentPositionY] = "X";
+  rows[nextPositionX][nextPositionY] = guardDirection;
+
+  return [nextPositionX, nextPositionY];
+};
 async function puzzle() {
   let input = await fs.readFile("input.txt", { encoding: "utf8" });
   input = input.replaceAll("\r", "").split("\n");
@@ -8,80 +98,52 @@ async function puzzle() {
     rows.push(str.split(""));
   });
 
-  let currentPositionX = -1;
-  let currentPositionY = -1;
-  //find starting position
-  rows.forEach((row, index) => {
-    if (row.indexOf("^") !== -1) {
-      currentPositionX = index;
-      currentPositionY = row.indexOf("^");
-    }
-  });
+  let numberOfRows = rows.length;
+  let numbrOfColumns = rows[0].length;
+  let [currentPositionX, currentPositionY] = getStartingPosition(rows);
 
-  let isInBound = true;
+  let guardLeft = false;
 
-  while (isInBound) {
-    const guard = rows[currentPositionX][currentPositionY];
+  while (guardLeft === false) {
+    const guardDirection = rows[currentPositionX][currentPositionY];
 
-    let nextPositionX = currentPositionX;
-    let nextPositionY = currentPositionY;
-    //get coordinate of next position
-    switch (guard) {
-      case "^":
-        nextPositionX = currentPositionX - 1;
-        break;
-      case ">":
-        nextPositionY = currentPositionY + 1;
-        break;
-      case "v":
-        nextPositionX = currentPositionX + 1;
-        break;
-      case "<":
-        nextPositionY = currentPositionY - 1;
-        break;
-      default:
-        console.log("something went wrong");
-        break;
-    }
-    //check if next position is out of bounds. meaning guard left, aka puzzle end
+    let [nextPositionX, nextPositionY] = getNextPosition(
+      currentPositionX,
+      currentPositionY,
+      guardDirection
+    );
+
     if (
-      nextPositionX < 0 ||
-      nextPositionX > rows.length - 1 ||
-      nextPositionY < 0 ||
-      nextPositionY > rows[0].length - 1
+      checkIfGuardLeft(
+        nextPositionX,
+        nextPositionY,
+        numberOfRows,
+        numbrOfColumns
+      ) === false
     ) {
-      //game ends
-      isInBound = false;
-    } else {
-      //we are still in the game
+      //puzzle not solved yet, keep going
+
       //check if we hit an obstacle
       if (rows[nextPositionX][nextPositionY] === "#") {
-        // changing direction
-        switch (guard) {
-          case "^":
-            rows[currentPositionX][currentPositionY] = ">";
-            break;
-          case ">":
-            rows[currentPositionX][currentPositionY] = "v";
-            break;
-          case "v":
-            rows[currentPositionX][currentPositionY] = "<";
-            break;
-          case "<":
-            rows[currentPositionX][currentPositionY] = "^";
-            break;
-          default:
-            console.log("something went wrong 2");
-            break;
-        }
+        changeDirection(
+          rows,
+          guardDirection,
+          currentPositionX,
+          currentPositionY
+        );
       } else {
-        //move the guard to the next position
-        rows[currentPositionX][currentPositionY] = "X";
-        rows[nextPositionX][nextPositionY] = guard;
-
-        currentPositionX = nextPositionX;
-        currentPositionY = nextPositionY;
+        [currentPositionX, currentPositionY] = moveGuarToNextPosition(
+          rows,
+          guardDirection,
+          currentPositionX,
+          currentPositionY,
+          nextPositionX,
+          nextPositionY
+        );
       }
+    } else {
+      //puzzle ends
+      guardLeft = true;
     }
   }
 
