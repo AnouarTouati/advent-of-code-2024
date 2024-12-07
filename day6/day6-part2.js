@@ -1,6 +1,193 @@
 const fs = require("node:fs/promises");
-const { default: test } = require("node:test");
 
+const getStartingPosition = (rows) => {
+  let position = [];
+  rows.forEach((row, index) => {
+    if (row.indexOf("^") !== -1) {
+      position[0] = index;
+      position[1] = row.indexOf("^");
+    }
+  });
+  return position;
+};
+
+const getNextPosition = (
+  currentPositionX,
+  currentPositionY,
+  guardDirection
+) => {
+  let nextPositionX = currentPositionX;
+  let nextPositionY = currentPositionY;
+  switch (guardDirection) {
+    case "^":
+      nextPositionX = currentPositionX - 1;
+      break;
+    case ">":
+      nextPositionY = currentPositionY + 1;
+      break;
+    case "v":
+      nextPositionX = currentPositionX + 1;
+      break;
+    case "<":
+      nextPositionY = currentPositionY - 1;
+      break;
+    default:
+      console.log("something went wrong");
+      break;
+  }
+  return [nextPositionX, nextPositionY];
+};
+
+const checkIfGuardLeft = (
+  nextPositionX,
+  nextPositionY,
+  numberOfRows,
+  numberOfColumns
+) => {
+  return (
+    nextPositionX < 0 ||
+    nextPositionX > numberOfRows - 1 ||
+    nextPositionY < 0 ||
+    nextPositionY > numberOfColumns - 1
+  );
+};
+
+const changeDirection = (
+  rows,
+  guardDirection,
+  currentPositionX,
+  currentPositionY
+) => {
+  switch (guardDirection) {
+    case "^":
+      rows[currentPositionX][currentPositionY] = ">";
+      break;
+    case ">":
+      rows[currentPositionX][currentPositionY] = "v";
+      break;
+    case "v":
+      rows[currentPositionX][currentPositionY] = "<";
+      break;
+    case "<":
+      rows[currentPositionX][currentPositionY] = "^";
+      break;
+    default:
+      console.log("something went wrong 2");
+      break;
+  }
+};
+
+const moveGuarToNextPosition = (
+  rows,
+  guardDirection,
+  currentPositionX,
+  currentPositionY,
+  nextPositionX,
+  nextPositionY
+) => {
+  rows[currentPositionX][currentPositionY] = "X";
+  rows[nextPositionX][nextPositionY] = guardDirection;
+
+  return [nextPositionX, nextPositionY];
+};
+const isTherePatternOfRepeatedlyHitCorners = (directionChanges) => {
+  let keysIterator = directionChanges.keys();
+  let key = keysIterator.next();
+
+  let numberOfDistinctCornersTakenTwice = 0; //for 4 corner loop
+  let numberOfDistinctCornersTakenThreeTimes = 0; //for line loop i.e 2 corners
+  while (!key.done) {
+    if (directionChanges.get(key.value) >= 2) {
+      numberOfDistinctCornersTakenTwice++;
+    }
+    if (directionChanges.get(key.value) >= 3) {
+      numberOfDistinctCornersTakenThreeTimes++;
+    }
+    key = keysIterator.next();
+  }
+
+  if (
+    numberOfDistinctCornersTakenTwice >= 4 ||
+    numberOfDistinctCornersTakenThreeTimes >= 2
+  ) {
+    return true;
+  }
+  return false;
+};
+const addDirectionChangeToTheList = (
+  directionChanges,
+  positionX,
+  positionY
+) => {
+  if (directionChanges.has(positionX + "" + positionY)) {
+    let currentValue = directionChanges.get(positionX + "" + positionY);
+
+    directionChanges.set(positionX + "" + positionY, currentValue + 1);
+  } else {
+    directionChanges.set(positionX + "" + positionY, 1);
+  }
+};
+function testForLooping(rows) {
+  let numberOfRows = rows.length;
+  let numbrOfColumns = rows[0].length;
+  let [currentPositionX, currentPositionY] = getStartingPosition(rows);
+
+  let guardLeft = false;
+  let directionChanges = new Map();
+  while (guardLeft === false) {
+    if (isTherePatternOfRepeatedlyHitCorners(directionChanges)) {
+      return true;
+    }
+    const guardDirection = rows[currentPositionX][currentPositionY];
+
+    let [nextPositionX, nextPositionY] = getNextPosition(
+      currentPositionX,
+      currentPositionY,
+      guardDirection
+    );
+
+    if (
+      checkIfGuardLeft(
+        nextPositionX,
+        nextPositionY,
+        numberOfRows,
+        numbrOfColumns
+      ) === false
+    ) {
+      //puzzle not solved yet, keep going
+
+      //check if we hit an obstacle
+      if (
+        rows[nextPositionX][nextPositionY] === "#" ||
+        rows[nextPositionX][nextPositionY] === "O"
+      ) {
+        addDirectionChangeToTheList(
+          directionChanges,
+          currentPositionX,
+          currentPositionY
+        );
+        changeDirection(
+          rows,
+          guardDirection,
+          currentPositionX,
+          currentPositionY
+        );
+      } else {
+        [currentPositionX, currentPositionY] = moveGuarToNextPosition(
+          rows,
+          guardDirection,
+          currentPositionX,
+          currentPositionY,
+          nextPositionX,
+          nextPositionY
+        );
+      }
+    } else {
+      //guard left i.e no loop
+      return false;
+    }
+  }
+}
 async function getData() {
   let input = await fs.readFile("input.txt", { encoding: "utf8" });
   input = input.replaceAll("\r", "").split("\n");
@@ -10,7 +197,7 @@ async function getData() {
   });
   return rows;
 }
-async function part2() {
+async function puzzle() {
   let numberOfPossibleObstacle = 0;
   let rows = await getData();
   console.log("number of rows " + rows.length);
@@ -21,14 +208,10 @@ async function part2() {
     for (let j = 0; j < rows[0].length; j++) {
       if (rows[i][j] !== "#" && rows[i][j] !== "^") {
         // console.log("currenting checking " + (i * 130 + (j + 1)));
-        // console.log("i:" + i + " j:" + j);
-        // console.log(
-        //   "Number of possible loop causing obstacles is : " +
-        //     numberOfPossibleObstacle
-        // );
+
         let newRows = structuredClone(rows);
         newRows[i][j] = "O";
-        if (testForLoop(newRows)) {
+        if (testForLooping(newRows)) {
           numberOfPossibleObstacle++;
         }
       }
@@ -39,125 +222,4 @@ async function part2() {
     "Number of possible loop causing obstacles is : " + numberOfPossibleObstacle
   );
 }
-function testForLoop(rows) {
-  let currentPositionX = -1;
-  let currentPositionY = -1;
-  //find starting position
-  rows.forEach((row, index) => {
-    if (row.indexOf("^") !== -1) {
-      currentPositionX = index;
-      currentPositionY = row.indexOf("^");
-    }
-  });
-
-  let isInBound = true;
-  let directionChanges = new Map();
-  while (isInBound) {
-    if (directionChanges.keys.length > 25) return false;
-    let keysIterator = directionChanges.keys();
-    let key = keysIterator.next();
-
-    let numberOfCornersTakenTwice = 0;
-    let numberOfCornersTakenSixTime = 0;
-    while (!key.done) {
-      if (directionChanges.get(key.value) >= 2) {
-        numberOfCornersTakenTwice++;
-      }
-      if (directionChanges.get(key.value) >= 6) {
-        numberOfCornersTakenSixTime++;
-      }
-      key = keysIterator.next();
-    }
-
-    if (numberOfCornersTakenTwice >= 4 || numberOfCornersTakenSixTime >= 2)
-      return true;
-    const guard = rows[currentPositionX][currentPositionY];
-    // if (directionChanges.size === 144) {
-    //   console.log(
-    //     currentPositionX + 1 + " " + (currentPositionY + 1) + " " + guard
-    //   );
-    // }
-    let nextPositionX = currentPositionX;
-    let nextPositionY = currentPositionY;
-    //get coordinate of next position
-    switch (guard) {
-      case "^":
-        nextPositionX = currentPositionX - 1;
-        break;
-      case ">":
-        nextPositionY = currentPositionY + 1;
-        break;
-      case "v":
-        nextPositionX = currentPositionX + 1;
-        break;
-      case "<":
-        nextPositionY = currentPositionY - 1;
-        break;
-      default:
-        console.log("something went wrong");
-        break;
-    }
-    //check if next position is out of bounds. meaning guard left, aka puzzle end
-    if (
-      nextPositionX < 0 ||
-      nextPositionX > rows.length - 1 ||
-      nextPositionY < 0 ||
-      nextPositionY > rows[0].length - 1
-    ) {
-      //game ends
-      isInBound = false;
-    } else {
-      //we are still in the game
-      //check if we hit an obstacle
-      if (
-        rows[nextPositionX][nextPositionY] === "#" ||
-        rows[nextPositionX][nextPositionY] === "O"
-      ) {
-        // changing direction
-        // console.log("direction change");
-        if (directionChanges.has(currentPositionX + "" + currentPositionY)) {
-          let currentValue = directionChanges.get(
-            currentPositionX + "" + currentPositionY
-          );
-
-          directionChanges.set(
-            currentPositionX + "" + currentPositionY,
-            currentValue + 1
-          );
-        } else {
-          directionChanges.set(currentPositionX + "" + currentPositionY, 1);
-        }
-
-        switch (guard) {
-          case "^":
-            rows[currentPositionX][currentPositionY] = ">";
-            break;
-          case ">":
-            rows[currentPositionX][currentPositionY] = "v";
-            break;
-          case "v":
-            rows[currentPositionX][currentPositionY] = "<";
-            break;
-          case "<":
-            rows[currentPositionX][currentPositionY] = "^";
-            break;
-          default:
-            console.log("something went wrong 2");
-            break;
-        }
-      } else {
-        //move the guard to the next position
-        rows[currentPositionX][currentPositionY] = "X";
-        rows[nextPositionX][nextPositionY] = guard;
-
-        currentPositionX = nextPositionX;
-        currentPositionY = nextPositionY;
-      }
-    }
-  }
-
-  //guard left the grid
-  return false;
-}
-
-part2();
+puzzle();
