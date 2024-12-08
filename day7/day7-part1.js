@@ -5,32 +5,39 @@ function dec2bin(dec, numberOfOperators) {
 
 async function puzzle() {
   let input = await fs.readFile("input.txt", { encoding: "utf8" });
-  input = input.replaceAll("\r", "").replaceAll(":", "").split("\n");
+  input = input.replaceAll("\r", "").split("\n");
 
   let rows = [];
+  let results = [];
   input.forEach((str) => {
-    rows.push(str.split(" "));
+    let [result, operands] = str.split(": ");
+
+    results.push(result);
+    rows.push(operands.split(" "));
   });
+
   rows.forEach((row) => row.map(Number));
+  results.forEach(Number);
 
   let totalSum = 0;
-  rows.forEach((row) => {
-    let numberOfOperands = row.length - 1;
+  rows.forEach((row, rowIndex) => {
+    let numberOfOperands = row.length;
     let numberOfOperators = numberOfOperands - 1;
-
+    // loop to test all possible combinations
     for (let i = 0; i < Math.pow(2, numberOfOperators); i++) {
+      //create combinations in binary form
       let operatorsTable = dec2bin(i, numberOfOperators).split("").map(Number);
 
-      let result = Number(row[1]);
+      let result = Number(row[0]);
       operatorsTable.forEach((operator, index) => {
         if (operator === 0) {
-          result = Number(result) + Number(row[index + 2]);
+          result = Number(result) + Number(row[index + 1]);
         } else if (operator === 1) {
-          result = Number(result) * Number(row[index + 2]);
+          result = Number(result) * Number(row[index + 1]);
         }
       });
 
-      if (result === Number(row[0])) {
+      if (result === Number(results[rowIndex])) {
         totalSum += result;
         break;
       }
