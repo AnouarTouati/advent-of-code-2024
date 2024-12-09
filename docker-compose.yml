@@ -1,0 +1,9 @@
+services:
+  adventofcode:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: app
+    container_name: app
+    volumes:
+      - ./:/app:rw
