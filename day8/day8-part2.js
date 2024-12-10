@@ -1,156 +1,187 @@
 const fs = require("node:fs/promises");
-
-async function puzzle() {
+let rowsCount = 0;
+let columnCount = 0;
+const getData = async () => {
   let input = await fs.readFile("input.txt", { encoding: "utf8" });
   input = input.replaceAll("\r", "").split("\n");
   let grid = [];
   input.forEach((row) => grid.push(row.split("")));
-
-  let visited = new Map();
-
-  let antinodes = [];
-  for (let i = 0; i < grid.length; i++) {
-    visited.set(i, []);
+  rowsCount = grid.length;
+  columnCount = grid[0].length;
+  return grid;
+};
+const createAntinodesGrid = () => {
+  let antinodesGrid = [];
+  for (let i = 0; i < rowsCount; i++) {
     let tmp = [];
-    for (let j = 0; j < grid[0].length; j++) {
+    for (let j = 0; j < columnCount; j++) {
       tmp.push(".");
     }
-    antinodes.push(tmp);
+    antinodesGrid.push(tmp);
   }
-
-  for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[0].length; j++) {
-      const currentFrequency = grid[i][j];
-      if (currentFrequency !== ".") {
-        visited.get(i).push(j);
-        checkForMatchingFrequency(
-          grid,
-          currentFrequency,
-          i,
-          j,
-          visited,
-          antinodes
-        );
-      }
-    }
-  }
-
-  // antinodes.forEach((row)=> console.log(JSON.stringify(row)))
+  return antinodesGrid;
+};
+const calculateResult = (antinodesGrid) => {
   let numberOfAntinodes = 0;
-  for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[0].length; j++) {
-      if (antinodes[i][j] === "#") {
+  for (let i = 0; i < antinodesGrid.length; i++) {
+    for (let j = 0; j < antinodesGrid[0].length; j++) {
+      if (antinodesGrid[i][j] === "#") {
         numberOfAntinodes++;
       }
     }
   }
-  console.log("number of antinodes : " + numberOfAntinodes);
-}
-
-const checkForMatchingFrequency = (
-  grid,
-  currentFrequency,
-  currentFrequencyI,
-  currentFrequencyJ,
-  visited,
-  antinodes
+  return numberOfAntinodes;
+};
+const createVisitedMap = () => {
+  let visitedMap = new Map();
+  for (let i = 0; i < rowsCount; i++) {
+    visitedMap.set(i, []);
+  }
+  return visitedMap;
+};
+const checkIfOutOfBounds = (x, y) => {
+  return 0 <= x && x < rowsCount && 0 <= y && y < columnCount;
+};
+const processBottomLeftToTopRightDiagonal = (
+  currentNodeX,
+  currentNodeY,
+  otherNodeX,
+  otherNodeY,
+  distanceX,
+  distanceY,
+  antinodesGrid
 ) => {
-  for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[0].length; j++) {
-      if (visited.has(i)) {
-        if (visited.get(i).indexOf(j) !== -1) {
+  let isInBound = true;
+  let multiplier = 1;
+
+  while (isInBound) {
+    let firstAntinodeX = otherNodeX + distanceX * multiplier;
+    let firstAntinodeY = otherNodeY - distanceY * multiplier;
+
+    if (checkIfOutOfBounds(firstAntinodeX, firstAntinodeY)) {
+      antinodesGrid[firstAntinodeX][firstAntinodeY] = "#";
+    } else {
+      isInBound = false;
+    }
+    multiplier++;
+  }
+
+  isInBound = true;
+  multiplier = 1;
+  while (isInBound) {
+    let secondAntinodeX = currentNodeX - distanceX * multiplier;
+    let secondAntinodeY = currentNodeY + distanceY * multiplier;
+
+    if (checkIfOutOfBounds(secondAntinodeX, secondAntinodeY)) {
+      antinodesGrid[secondAntinodeX][secondAntinodeY] = "#";
+    } else {
+      isInBound = false;
+    }
+    multiplier++;
+  }
+};
+const processTopLeftToBottomRightDiagonal = (
+  currentNodeX,
+  currentNodeY,
+  otherNodeX,
+  otherNodeY,
+  distanceX,
+  distanceY,
+  antinodesGrid
+) => {
+  let isInBound = true;
+  let multiplier = 1;
+
+  while (isInBound) {
+    let firstAntinodeX = otherNodeX + distanceX * multiplier;
+    let firstAntinodeY = otherNodeY + distanceY * multiplier;
+
+    if (checkIfOutOfBounds(firstAntinodeX, firstAntinodeY)) {
+      antinodesGrid[firstAntinodeX][firstAntinodeY] = "#";
+    } else {
+      isInBound = false;
+    }
+    multiplier++;
+  }
+  isInBound = true;
+  multiplier = 1;
+  while (isInBound) {
+    let secondAntinodeX = currentNodeX - distanceX * multiplier;
+    let secondAntinodeY = currentNodeY - distanceY * multiplier;
+
+    if (checkIfOutOfBounds(secondAntinodeX, secondAntinodeY)) {
+      antinodesGrid[secondAntinodeX][secondAntinodeY] = "#";
+    } else {
+      isInBound = false;
+    }
+    multiplier++;
+  }
+};
+const processFrequencyNode = (
+  grid,
+  currentNode,
+  currentNodeX,
+  currentNodeY,
+  visitedMap,
+  antinodesGrid
+) => {
+  for (let otherNodeX = 0; otherNodeX < rowsCount; otherNodeX++) {
+    for (let otherNodeY = 0; otherNodeY < columnCount; otherNodeY++) {
+      if (visitedMap.has(otherNodeX)) {
+        if (visitedMap.get(otherNodeX).indexOf(otherNodeY) !== -1) {
           break;
         }
       }
-      const matchingFrequency = grid[i][j];
-      if (currentFrequency === matchingFrequency) {
-        antinodes[currentFrequencyI][currentFrequencyJ] = "#";
-        antinodes[i][j] = "#";
-        const distanceX = Math.abs(currentFrequencyI - i);
-        const distanceY = Math.abs(currentFrequencyJ - j);
-        if (j < currentFrequencyJ) {
-          //bottom left to top right diagonal
+      const otherNode = grid[otherNodeX][otherNodeY];
+      if (currentNode === otherNode) {
+        antinodesGrid[currentNodeX][currentNodeY] = "#";
+        antinodesGrid[otherNodeX][otherNodeY] = "#";
+        const distanceX = Math.abs(currentNodeX - otherNodeX);
+        const distanceY = Math.abs(currentNodeY - otherNodeY);
+        if (otherNodeY < currentNodeY) {
+          //bottom left to top right diagonal || horizontal line
 
-          let state = true;
-          let index = 1;
-          while (state) {
-            let antinode1I = i + distanceX * index;
-            let antinode1J = j - distanceY * index;
-
-            if (
-              0 <= antinode1I &&
-              antinode1I < grid.length &&
-              0 <= antinode1J &&
-              antinode1J < grid[0].length
-            ) {
-              antinodes[antinode1I][antinode1J] = "#";
-              index++;
-            } else {
-              state = false;
-            }
-          }
-
-          state = true;
-          index = 1;
-
-          while (state) {
-            let antinode2I = currentFrequencyI - distanceX * index;
-            let antinode2J = currentFrequencyJ + distanceY * index;
-
-            if (
-              0 <= antinode2I &&
-              antinode2I < grid.length &&
-              0 <= antinode2J &&
-              antinode2J < grid[0].length
-            ) {
-              antinodes[antinode2I][antinode2J] = "#";
-              index++;
-            } else {
-              state = false;
-            }
-          }
+          processBottomLeftToTopRightDiagonal(
+            currentNodeX,
+            currentNodeY,
+            otherNodeX,
+            otherNodeY,
+            distanceX,
+            distanceY,
+            antinodesGrid
+          );
         } else {
-          //bottom right to top left diagonal or vertical / horizontal
+          //bottom right to top left diagonal || vertical line
 
-          let state = true;
-          let index = 1;
-          while (state) {
-            let antinode1I = i + distanceX * index;
-            let antinode1J = j + distanceY * index;
-            if (
-              0 <= antinode1I &&
-              antinode1I < grid.length &&
-              0 <= antinode1J &&
-              antinode1J < grid[0].length
-            ) {
-              antinodes[antinode1I][antinode1J] = "#";
-              index++;
-            } else {
-              state = false;
-            }
-          }
-
-          state = true;
-          index = 1;
-          while (state) {
-            let antinode2I = currentFrequencyI - distanceX * index;
-            let antinode2J = currentFrequencyJ - distanceY * index;
-
-            if (
-              0 <= antinode2I &&
-              antinode2I < grid.length &&
-              0 <= antinode2J &&
-              antinode2J < grid[0].length
-            ) {
-              antinodes[antinode2I][antinode2J] = "#";
-              index++;
-            } else {
-              state = false;
-            }
-          }
+          processTopLeftToBottomRightDiagonal(
+            currentNodeX,
+            currentNodeY,
+            otherNodeX,
+            otherNodeY,
+            distanceX,
+            distanceY,
+            antinodesGrid
+          );
         }
       }
     }
   }
 };
+async function puzzle() {
+  let grid = await getData();
+  let antinodesGrid = createAntinodesGrid();
+  let visitedMap = createVisitedMap(grid);
+
+  for (let i = 0; i < rowsCount; i++) {
+    for (let j = 0; j < columnCount; j++) {
+      const node = grid[i][j];
+      if (node !== ".") {
+        visitedMap.get(i).push(j);
+        processFrequencyNode(grid, node, i, j, visitedMap, antinodesGrid);
+      }
+    }
+  }
+
+  console.log("number of antinodes : " + calculateResult(antinodesGrid));
+}
 puzzle();
