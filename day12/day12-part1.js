@@ -65,7 +65,7 @@ async function puzzle() {
     region.forEach((plant)=>{
       let [i,j]=plant.split(",").map(Number)
       let adjacencyList= getAdjacencyList(i,j)
-       borders+= (4-adjacencyList.length)
+       borders+= (4-adjacencyList.length)//adjacency list does not include borders with the grid, we have to account for that
        adjacencyList.forEach((neighbour)=>{
         if(grid[i][j]!==grid[neighbour[0]][neighbour[1]]){
           borders++
