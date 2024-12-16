@@ -33,6 +33,8 @@ async function puzzle() {
     const Bcost = 1
     machines.forEach((machine) => {
         let [AX, AY, BX, BY, XResult, YResult] = machine
+        XResult += 10000000000000
+        YResult += 10000000000000
         let aPresses = ((XResult * BY) - (YResult * BX)) / ((AX * BY) - (BX * AY))
         let bPresses = (YResult - AY * aPresses) / BY
         if (Math.floor(aPresses) === aPresses && Math.floor(bPresses) === bPresses) {
