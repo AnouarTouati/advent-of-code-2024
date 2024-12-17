@@ -45,57 +45,61 @@ async function puzzle() {
     }
     let quadrant1Count = 0
     let keepSearching = true
+    let visited=[]
     while (keepSearching) {
-        let index = robots.findIndex((robot) => {
-            return robot.Px < Math.floor(width / 2) && robot.Py < Math.floor(height / 2);
+        let index = robots.findIndex((robot,index) => {
+            return robot.Px < Math.floor(width / 2) && robot.Py < Math.floor(height / 2)&& visited.indexOf(index)===-1;
         })
         if (index !== -1) {
             quadrant1Count++
-            robots.splice(index, 1)
+           visited.push(index)
         } else {
             keepSearching = false
         }
     }
     let quadrant2Count = 0
     keepSearching = true
+    visited=[]
     while (keepSearching) {
-        let index = robots.findIndex((robot) => {
-            return robot.Px > Math.floor(width / 2) && robot.Py < Math.floor(height / 2);
+        let index = robots.findIndex((robot,index) => {
+            return robot.Px > Math.floor(width / 2) && robot.Py < Math.floor(height / 2)&& visited.indexOf(index)===-1;
         })
         if (index !== -1) {
             quadrant2Count++
-            robots.splice(index, 1)
+            visited.push(index)
         } else {
             keepSearching = false
         }
     }
     let quadrant3Count = 0
     keepSearching = true
+    visited=[]
     while (keepSearching) {
-        let index = robots.findIndex((robot) => {
-            return robot.Px < Math.floor(width / 2) && robot.Py > Math.floor(height / 2);
+        let index = robots.findIndex((robot,index) => {
+            return robot.Px < Math.floor(width / 2) && robot.Py > Math.floor(height / 2)&& visited.indexOf(index)===-1;
         })
         if (index !== -1) {
             quadrant3Count++
-            robots.splice(index, 1)
+            visited.push(index)
         } else {
             keepSearching = false
         }
     }
     let quadrant4Count = 0
     keepSearching = true
+    visited=[]
     while (keepSearching) {
-        let index = robots.findIndex((robot) => {
-            return robot.Px > Math.floor(width / 2) && robot.Py > Math.floor(height / 2);
+        let index = robots.findIndex((robot,index) => {
+            return robot.Px > Math.floor(width / 2) && robot.Py > Math.floor(height / 2)&& visited.indexOf(index)===-1;
         })
         if (index !== -1) {
             quadrant4Count++
-            robots.splice(index, 1)
+            visited.push(index)
         } else {
             keepSearching = false
         }
     }
-   
+
     console.log(`Safet factor ${quadrant1Count * quadrant2Count * quadrant3Count * quadrant4Count}`)
 }
 
